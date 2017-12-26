@@ -1,168 +1,166 @@
 {
-    "AWSTemplateFormatVersion": "2010-09-09",
+	"AWSTemplateFormatVersion": "2010-09-09",
 
-    "Description" : "This Cloud Formation Template creates a lab environment for the F5 Programmability/Super-NetOps Training Lab **WARNING** This template creates Amazon EC2 instances. You will be billed for the AWS resources used if you create a stack from this template. This template is supplied with no warranty or support.",
-    "Description" : "This Cloud Formation Template creates the network topology for the F5 Programmability/Super-NetOps Training Lab **WARNING** This template creates Amazon EC2 instances. You will be billed for the AWS resources used if you create a stack from this template. This template is supplied with no warranty or support.",
-    "Parameters": {
-        "UserIP": {
-            "Description": " The IP address range that can be used to access the Jump Server using RDP.",
-            "Type": "String",
-            "MinLength": "9",
-            "MaxLength": "18",
-            "Default": "0.0.0.0/0",
-            "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
-            "ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x."
-        }
+	"Description": "This Cloud Formation Template creates the f5 LTMS for use with the automation lab",
+	"Parameters": {
+      "VPC": {
+      "Description": "Existing VPC to use",
+      "Type": "AWS::EC2::VPC::Id",
+      "ConstraintDescription": "must be the name of an existing VPC."
     },
-    "RepoBranch": {
-      "Description": "The GitHub Repo branch to load setup scripts from",
+    "InstanceType": {
+      "Description": "Ubuntu instance type",
       "Type": "String",
-      "Default": "master"
+      "Default": "t2.medium",
+      "AllowedValues": [
+        "t2.medium",
+        "m3.medium",
+        "m3.large"
+      ],
+      "ConstraintDescription": "must be a valid EC2 instance type."
     },
-    "KeyName": {
-      "Description": "Name of an existing EC2 KeyPair to enable SSH to the instance",
-      "Type": "AWS::EC2::KeyPair::KeyName",
-      "ConstraintDescription": "must be the name of an existing EC2 KeyPair."
-    },
-    "ManagementSubnet": {
-      "Description": "Existing Mgmt subnet in the VPC",
-      "Type": "AWS::EC2::Subnet::Id",
-      "ConstraintDescription": "must be the name of an existing subnet."
-    },
-    "ExternalSubnet": {
-      "Description": "Existing External subnet in the VPC",
-      "Type": "AWS::EC2::Subnet::Id",
-      "ConstraintDescription": "must be the name of an existing subnet."
-    },
-    "AccessSubnet": {
-      "Description": "Existing Access subnet in the VPC",
-      "Type": "AWS::EC2::Subnet::Id",
-      "ConstraintDescription": "must be the name of an existing subnet."
-    },
-    "IngressSG": {
-      "Description": "Existing Ingress Security Group for the VPC",
-      "Type": "AWS::EC2::SecurityGroup::Id",
-      "ConstraintDescription": "must be the name of an existing security group."
-    },
+		"UserIP": {
+			"Description": " The IP address range that can be used to access the Jump Server using RDP.",
+			"Type": "String",
+			"MinLength": "9",
+			"MaxLength": "18",
+			"Default": "0.0.0.0/0",
+			"AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+			"ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x."
+		},
+		"RepoBranch": {
+			"Description": "The GitHub Repo branch to load setup scripts from",
+			"Type": "String",
+			"Default": "master"
+		},
+		"KeyName": {
+			"Description": "Name of an existing EC2 KeyPair to enable SSH to the instance",
+			"Type": "AWS::EC2::KeyPair::KeyName",
+			"ConstraintDescription": "must be the name of an existing EC2 KeyPair."
+		},
+		"ManagementSubnet": {
+			"Description": "Existing Mgmt subnet in the VPC",
+			"Type": "AWS::EC2::Subnet::Id",
+			"ConstraintDescription": "must be the name of an existing subnet."
+		},
+		"ExternalSubnet": {
+			"Description": "Existing External subnet in the VPC",
+			"Type": "AWS::EC2::Subnet::Id",
+			"ConstraintDescription": "must be the name of an existing subnet."
+		},
+		"AccessSubnet": {
+			"Description": "Existing Access subnet in the VPC",
+			"Type": "AWS::EC2::Subnet::Id",
+			"ConstraintDescription": "must be the name of an existing subnet."
+		},
+		"IngressSG": {
+			"Description": "Existing Ingress Security Group for the VPC",
+			"Type": "AWS::EC2::SecurityGroup::Id",
+			"ConstraintDescription": "must be the name of an existing security group."
+		}
+	},
 
-"Resources": { 
-    "InstanceSecurityGroup": {
-      "Type": "AWS::EC2::SecurityGroup",
-      "Properties": {
-        "VpcId": {
-          "Ref": "VPC"
-        },
-      "SecurityGroupIngress": [
-          {
-            "IpProtocol": "icmp",
-            "FromPort": "-1",
-            "ToPort": "-1",
-            "CidrIp": "0.0.0.0/0"
-          },
-          {
-            "IpProtocol": "tcp",
-            "FromPort": "22",
-            "ToPort": "22",
-            "CidrIp": {
-              "Ref": "UserIP"
-            }
-          },
-          {
-            "IpProtocol": "tcp",
-            "FromPort": "8443",
-            "ToPort": "8443",
-            "CidrIp": {
-              "Ref": "UserIP"
-            }
-          },
-          {
-              "IpProtocol": "tcp",
-              "FromPort": "443",
-              "ToPort": "443",
-            "CidrIp": "0.0.0.0/0"
-          }
-        ]
-      }
-},
-"F5SNOpsBIGIPA": {
-            "Type": "AWS::EC2::Instance",
-            "Properties": {
-                "DisableApiTermination": "false",
-                "InstanceInitiatedShutdownBehavior": "stop",
-                "ImageId": "ami-18ab2462",
-                "InstanceType": "t2.medium",
-                "KeyName": {
-                    "Ref": "KeyName"
-                },
-                "Monitoring": "false",
-                "Tags": [
-                    {
-                        "Key": "Name",
-                        "Value": "F5SNOpsBIG-IPA"
-                    }
-                ],
-                "NetworkInterfaces": [
-                    {
-                        "DeleteOnTermination": "true",
-                        "Description": "Primary network interface",
-                        "DeviceIndex": 0,
-                        "SubnetId": {
-                            "Ref": "ManagementSubnet"
-                        },
-                        "PrivateIpAddresses": [
-                            {
-                                "PrivateIpAddress": "10.1.1.10",
-                                "Primary": "true"
-                            }
-                        ],
-                        "GroupSet": [
-                            {
-                                "Ref": "InstanceSecurityGroup"
-                            }
-                        ]
-                    }
-                ]
-            }
-        },
-        "F5SNOpsBIGIPB": {
-            "Type": "AWS::EC2::Instance",
-            "Properties": {
-                "DisableApiTermination": "false",
-                "InstanceInitiatedShutdownBehavior": "stop",
-                "ImageId": "ami-18ab2462",
-                "InstanceType": "t2.medium",
-                "KeyName": {
-                    "Ref": "KeyName"
-                },
-                "Monitoring": "false",
-                "Tags": [
-                    {
-                        "Key": "Name",
-                        "Value": "F5SNOpsBIG-IPB"
-                    }
-                ],
-                "NetworkInterfaces": [
-                    {
-                        "DeleteOnTermination": "true",
-                        "Description": "Primary network interface",
-                        "DeviceIndex": 0,
-                        "SubnetId": {
-                            "Ref": "ManagementSubnet"
-                        },
-                        "PrivateIpAddresses": [
-                            {
-                                "PrivateIpAddress": "10.1.1.11",
-                                "Primary": "true"
-                            }
-                        ],
-                        "GroupSet": [
-                            {
-                                "Ref": "InstanceSecurityGroup"
-                            }
-                        ]
-                    }
-                ]
-            }
-        },
-},
+	"Resources": {
+		"InstanceSecurityGroup": {
+			"Type": "AWS::EC2::SecurityGroup",
+			"Properties": {
+				"VpcId": {
+					"Ref": "VPC"
+				},
+				"SecurityGroupIngress": [{
+						"IpProtocol": "icmp",
+						"FromPort": "-1",
+						"ToPort": "-1",
+						"CidrIp": "0.0.0.0/0"
+					},
+					{
+						"IpProtocol": "tcp",
+						"FromPort": "22",
+						"ToPort": "22",
+						"CidrIp": {
+							"Ref": "UserIP"
+						}
+					},
+					{
+						"IpProtocol": "tcp",
+						"FromPort": "8443",
+						"ToPort": "8443",
+						"CidrIp": {
+							"Ref": "UserIP"
+						}
+					},
+					{
+						"IpProtocol": "tcp",
+						"FromPort": "443",
+						"ToPort": "443",
+						"CidrIp": "0.0.0.0/0"
+					}
+				]
+			}
+		},
+		"F5SNOpsBIGIPA": {
+			"Type": "AWS::EC2::Instance",
+			"Properties": {
+				"DisableApiTermination": "false",
+				"InstanceInitiatedShutdownBehavior": "stop",
+				"ImageId": "ami-18ab2462",
+				"InstanceType": "t2.medium",
+				"KeyName": {
+					"Ref": "KeyName"
+				},
+				"Monitoring": "false",
+				"Tags": [{
+					"Key": "Name",
+					"Value": "F5SNOpsBIG-IPA"
+				}],
+				"NetworkInterfaces": [{
+					"DeleteOnTermination": "true",
+					"Description": "Primary network interface",
+					"DeviceIndex": 0,
+					"SubnetId": {
+						"Ref": "ManagementSubnet"
+					},
+					"PrivateIpAddresses": [{
+						"PrivateIpAddress": "10.1.1.10",
+						"Primary": "true"
+					}],
+					"GroupSet": [{
+						"Ref": "InstanceSecurityGroup"
+					}]
+				}]
+			}
+		},
+		"F5SNOpsBIGIPB": {
+			"Type": "AWS::EC2::Instance",
+			"Properties": {
+				"DisableApiTermination": "false",
+				"InstanceInitiatedShutdownBehavior": "stop",
+				"ImageId": "ami-18ab2462",
+				"InstanceType": "t2.medium",
+				"KeyName": {
+					"Ref": "KeyName"
+				},
+				"Monitoring": "false",
+				"Tags": [{
+					"Key": "Name",
+					"Value": "F5SNOpsBIG-IPB"
+				}],
+				"NetworkInterfaces": [{
+					"DeleteOnTermination": "true",
+					"Description": "Primary network interface",
+					"DeviceIndex": 0,
+					"SubnetId": {
+						"Ref": "ManagementSubnet"
+					},
+					"PrivateIpAddresses": [{
+						"PrivateIpAddress": "10.1.1.11",
+						"Primary": "true"
+					}],
+					"GroupSet": [{
+						"Ref": "InstanceSecurityGroup"
+					}]
+				}]
+			}
+		}
+	}
 }

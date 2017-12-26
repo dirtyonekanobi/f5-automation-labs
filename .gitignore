@@ -1,2 +1,3 @@
 *.sublime-*
 pdf/*
+.DS_Store
